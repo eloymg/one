@@ -44,11 +44,11 @@ face = scipy.misc.face()
 face = face[:,:,0]
 face = scipy.misc.imresize(face,[128,128])
 
-mat_vec = generate_hadamard(4**7)
-np.random.shuffle(mat_vec)
+hadamard_masks = generate_hadamard(4**7)
+np.random.shuffle(hadamard_masks)
 res = np.zeros(face.shape)
 num=1
-for m in mat_vec:
+for m in hadamard_masks:
     masked = face*m
     intensity = masked.sum(dtype="float64")
     pixels=m.sum(dtype="float64")
