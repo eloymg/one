@@ -1,6 +1,7 @@
 """One pixel camera simulation"""
 
 import math
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,33 +53,39 @@ def generate_hadamard(size, number):
 
 
 TEST_IMAGE = scipy.misc.face()
-TEST_IMAGE = TEST_IMAGE[:, :, 1]
+TEST_IMAGE = TEST_IMAGE[:, :, 0]
 TEST_IMAGE = scipy.misc.imresize(TEST_IMAGE, [128, 128])
 TEST_IMAGE = TEST_IMAGE.astype("float64")
 
 nn = 4**7
-M = 4**7
+
 HADAMARD_MASKS = generate_hadamard(TEST_IMAGE.shape[0], nn)
 np.random.shuffle(HADAMARD_MASKS)
+ssim_vector = []
+M_vector = []
+for M in range(0,(4**7)*5,(4**7)*5/20):
+    
+    result = np.ones(TEST_IMAGE.shape)
+    for i in range(0, M):
+        #mask = HADAMARD_MASKS[i]
+        index = np.random.random_integers(0,nn-1)
+        mask = HADAMARD_MASKS[index]
+        mask = mask == 1
+        
+        maskP = mask * 1
+        maskedP = TEST_IMAGE * maskP
+        maskN = np.logical_not(mask)*1
+        maskedN = TEST_IMAGE * maskN
+        intensity = maskedP.sum(dtype="float64")-maskedN.sum(dtype="float64")
+        pixels = mask.sum(dtype="float64")
+        result += intensity * mask
 
-result = np.ones(TEST_IMAGE.shape)
+    result = skimage.exposure.rescale_intensity(result, out_range=(0, 255))
+    M_vector.append(M)
+    ssim_result = ssim(result, TEST_IMAGE)
+    ssim_vector.append(ssim_result)
+    print M,",",ssim_result
 
-for i in range(0, M):
-    mask = HADAMARD_MASKS[i] == 1
-    mask = mask * 1
-    masked = TEST_IMAGE * HADAMARD_MASKS[i]
-    intensity = masked.sum(dtype="float64")
-    pixels = HADAMARD_MASKS[i].sum(dtype="float64")
-    result += intensity * HADAMARD_MASKS[i]
-
-result = skimage.exposure.rescale_intensity(result, out_range=(0, 255))
-
-print ssim(result, TEST_IMAGE)
-
-fig = plt.figure()
-fig.add_subplot(1, 2, 1)
-plt.gray()
-plt.imshow(TEST_IMAGE)
-fig.add_subplot(1, 2, 2)
-plt.imshow(result)
+plt.plot(M_vector,ssim_vector)
 plt.show()
+
