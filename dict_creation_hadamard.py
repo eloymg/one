@@ -1,14 +1,9 @@
-"""One pixel camera simulation"""
 
-import math
-
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy.misc
-import skimage.exposure
-from skimage.measure import compare_ssim as ssim
-
-
+import matplotlib.pyplot as plt
+import scipy.fftpack as spfft
+import scipy.ndimage as spimg
+import pickle
 
 def base_convert(number, base):
     """Convert number to a numerical base"""
@@ -50,35 +45,28 @@ def generate_hadamard(size, number):
         matrix_vector.append(hadamard_matrix)
     return matrix_vector
 
+nx=64
+ny=64
 
-TEST_IMAGE = scipy.misc.face()
-TEST_IMAGE = TEST_IMAGE[:, :, 1]
-TEST_IMAGE = scipy.misc.imresize(TEST_IMAGE, [64, 64])
-TEST_IMAGE = TEST_IMAGE.astype("float64")
-
-nn = 4**7
-M = 4**7
 HADAMARD_MASKS = generate_hadamard(TEST_IMAGE.shape[0], nn)
 np.random.shuffle(HADAMARD_MASKS)
 
-result = np.ones(TEST_IMAGE.shape)
+A = np.kron(
+    spfft.idct(np.identity(nx), norm='ortho', axis=0),
+    spfft.idct(np.identity(ny), norm='ortho', axis=0)
+    )
+mask_vec =[]
+mask_vec_raw =[]
+for i in range(0,nx*ny):
+    mask = HADAMARD_MASKS[i]
+    mask_vec_raw.append(mask)
+    mask_vec.append(mask.T.flatten())
+mask_vec = np.expand_dims(mask_vec, axis=1)
+A = np.dot(mask_vec,A)
 
-for i in range(0, M):
-    mask = HADAMARD_MASKS[i] == 1
-    mask = mask * 1
-    masked = TEST_IMAGE * HADAMARD_MASKS[i]
-    intensity = masked.sum(dtype="float64")
-    pixels = HADAMARD_MASKS[i].sum(dtype="float64")
-    result += intensity * HADAMARD_MASKS[i]
-
-result = skimage.exposure.rescale_intensity(result, out_range=(0, 255))
-
-print ssim(result, TEST_IMAGE)
-
-fig = plt.figure()
-fig.add_subplot(1, 2, 1)
-plt.gray()
-plt.imshow(TEST_IMAGE)
-fig.add_subplot(1, 2, 2)
-plt.imshow(result)
-plt.show()
+file = open('dict_hadamard.txt', 'w')
+pickle.dump(A, file)
+file.close()
+file = open('masks_hadamard.txt', 'w')
+pickle.dump(mask_vec_raw, file)
+file.close()

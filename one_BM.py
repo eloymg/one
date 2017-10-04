@@ -56,29 +56,33 @@ TEST_IMAGE = TEST_IMAGE[:, :, 1]
 TEST_IMAGE = scipy.misc.imresize(TEST_IMAGE, [64, 64])
 TEST_IMAGE = TEST_IMAGE.astype("float64")
 
-nn = 4**7
-M = 4**7
+nn = 4096
+
 HADAMARD_MASKS = generate_hadamard(TEST_IMAGE.shape[0], nn)
 np.random.shuffle(HADAMARD_MASKS)
 
-result = np.ones(TEST_IMAGE.shape)
+ssim_vec = []
+M_vec = []
 
-for i in range(0, M):
-    mask = HADAMARD_MASKS[i] == 1
-    mask = mask * 1
-    masked = TEST_IMAGE * HADAMARD_MASKS[i]
-    intensity = masked.sum(dtype="float64")
-    pixels = HADAMARD_MASKS[i].sum(dtype="float64")
-    result += intensity * HADAMARD_MASKS[i]
+for M in range(96,4096+200,200):
 
-result = skimage.exposure.rescale_intensity(result, out_range=(0, 255))
+    result = np.ones(TEST_IMAGE.shape)
 
-print ssim(result, TEST_IMAGE)
+    for i in range(0, M):
+        mask = HADAMARD_MASKS[i] == 1
+        mask = mask * 1
+        masked = TEST_IMAGE * HADAMARD_MASKS[i]
+        intensity = masked.sum(dtype="float64")
+        pixels = HADAMARD_MASKS[i].sum(dtype="float64")
+        result += intensity * HADAMARD_MASKS[i]
 
-fig = plt.figure()
-fig.add_subplot(1, 2, 1)
-plt.gray()
-plt.imshow(TEST_IMAGE)
-fig.add_subplot(1, 2, 2)
-plt.imshow(result)
+    result = skimage.exposure.rescale_intensity(result, out_range=(0, 255))
+    ssim_vec.append(ssim(result, TEST_IMAGE))
+    plt.figure()
+    plt.imshow(result)
+    plt.show()
+    M_vec.append(M)
+
+plt.figure()
+plt.plot(M_vec,ssim_vec)
 plt.show()

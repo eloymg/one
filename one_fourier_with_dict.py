@@ -1,19 +1,14 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.optimize as spopt
-import scipy.fftpack as spfft
-import scipy.ndimage as spimg
+
 import scipy.misc
 import cvxpy as cvx
-
-def dct2(x):
-    return spfft.dct(spfft.dct(x.T, norm='ortho', axis=0).T, norm='ortho', axis=0)
+import pickle
+import scipy.fftpack as spfft
 
 def idct2(x):
     return spfft.idct(spfft.idct(x.T, norm='ortho', axis=0).T, norm='ortho', axis=0)
-
-# read original image and downsize for speed
 
 TEST_IMAGE = scipy.misc.face()
 #TEST_IMAGE = plt.imread("/Users/eloymorenogarcia/Desktop/R.jpg")
@@ -23,24 +18,23 @@ ny,nx = X.shape
 ny = int(ny)
 nx = int(nx)
 
-# create dct matrix operator using kron (memory errors for large ny*nx)
-A = np.kron(
-    spfft.idct(np.identity(nx), norm='ortho', axis=0),
-    spfft.idct(np.identity(ny), norm='ortho', axis=0)
-    )
-mask_vec =[]
-intensity_vec =[]
-for i in range(0,500):
-    mask = (np.random.rand(ny,nx)<0.5)*1
-    masked = mask*X
+file = open('dict.txt', 'r')
+A = pickle.load(file)
+
+file = open('masks.txt', 'r')
+mask_vec = pickle.load(file)
+
+M = 500
+
+intensity_vec = []
+
+for i in range(0,M):
+    masked = mask_vec[i]*X
     intensity = np.sum(masked)
-    mask_vec.append(mask.T.flatten())
     intensity_vec.append(intensity)
-mask_vec = np.expand_dims(mask_vec, axis=1)
-print "first step"
-A = np.dot(mask_vec,A) # same as phi times kron
 
 # do L1 optimization
+A = A[0:M,:]
 vx = cvx.Variable(nx * ny)
 objective = cvx.Minimize(cvx.norm(vx, 1))
 constraints = [A*vx == intensity_vec]
