@@ -1,5 +1,0 @@
-{
-    "python.pythonPath": "/usr/local/bin/python2",
-    "python.formatting.provider": "yapf"
-
-}
