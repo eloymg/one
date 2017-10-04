@@ -19,15 +19,15 @@ ny,nx = X.shape
 ny = int(ny)
 nx = int(nx)
 
-file = open('dict.txt', 'r')
+file = open('dict_hadamard.txt', 'r')
 A = pickle.load(file)
 
-file = open('masks.txt', 'r')
+file = open('masks_hadamard.txt', 'r')
 mask_vec = pickle.load(file)
 
 ssim_vec = []
 M_vec = []
-for M in range(96,4096+400,400):
+for M in range(96,4096+800,800):
 
    # M = 500
 

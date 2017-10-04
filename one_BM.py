@@ -64,7 +64,7 @@ np.random.shuffle(HADAMARD_MASKS)
 ssim_vec = []
 M_vec = []
 
-for M in range(96,4096+200,200):
+for M in range(96,4096+800,800):
 
     result = np.ones(TEST_IMAGE.shape)
 
@@ -86,3 +86,5 @@ for M in range(96,4096+200,200):
 plt.figure()
 plt.plot(M_vec,ssim_vec)
 plt.show()
+print M_vec
+print ssim_vec

@@ -1,4 +1,4 @@
-
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fftpack as spfft
@@ -48,7 +48,7 @@ def generate_hadamard(size, number):
 nx=64
 ny=64
 
-HADAMARD_MASKS = generate_hadamard(TEST_IMAGE.shape[0], nn)
+HADAMARD_MASKS = generate_hadamard(64, 64*64)
 np.random.shuffle(HADAMARD_MASKS)
 
 A = np.kron(
