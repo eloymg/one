@@ -13,7 +13,7 @@ def idct2(x):
 TEST_IMAGE = scipy.misc.face()
 #TEST_IMAGE = plt.imread("/Users/eloymorenogarcia/Desktop/R.jpg")
 TEST_IMAGE = TEST_IMAGE[:, :, 1]
-X = scipy.misc.imresize(TEST_IMAGE, [32, 32])
+X = scipy.misc.imresize(TEST_IMAGE, [64, 64])
 ny,nx = X.shape
 ny = int(ny)
 nx = int(nx)

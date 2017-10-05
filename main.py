@@ -4,7 +4,75 @@ Main
 
 import math
 import numpy as np
+import scipy.misc
+import matplotlib.pyplot as plt
+import cvxpy as cvx
 
+class One(object):
+    def __init__(self):
+
+    def benchmark():
+
+    def reconstruction(self, method='', image, samples)
+        if method = '':
+
+        
+
+        elif method = 'fourier':
+
+            A = np.kron(
+            spfft.idct(np.identity(nx), norm='ortho', axis=0),
+            spfft.idct(np.identity(ny), norm='ortho', axis=0)
+            )
+            m = Masks()
+            mask_vec = m.generate_random(samples)
+            mask_vec_raw =[]
+            for i in range(0,nx*ny):
+                mask_vec.append(mask_vec[i].T.flatten())
+            mask_vec_formated = np.expand_dims(mask_vec, axis=1)
+            A = np.dot(mask_vec_formated,A)
+
+            for i in range(0,M):
+                mask = mask_vec[i]
+                masked = mask*image
+                intensity = np.sum(masked)
+                intensity_vec.append(intensity)
+
+            # do L1 optimization
+            AX = A[0:M,:]
+            vx = cvx.Variable(nx * ny)
+            objective = cvx.Minimize(cvx.norm(vx, 1))
+            constraints = [AX*vx == intensity_vec]
+            prob = cvx.Problem(objective, constraints)
+            result = prob.solve()
+            Xat2 = np.array(vx.value).squeeze()
+            Xat = Xat2.reshape(nx, ny).T
+            Xa = self.idct2(Xat)
+            Xa = Xa.astype("float64")
+    @staticmethod
+    def idct2(x):
+        return spfft.idct(spfft.idct(x.T, norm='ortho', axis=0).T, norm='ortho', axis=0)
+
+class Image(object):
+    def __init__(self):
+        """
+        Constructor
+        """
+    def return_image(self, size = 64, path = ''):
+        """
+        Return image
+        """
+        if path =='':
+            r_image = self.__normalize_image(scipy.misc.face(), size)
+        else:
+            r_image = self.__normalize_image(plt.imread(path), size)
+        return r_image
+    @staticmethod
+    def __normalize_image(image, size):
+        n_image = image[:, :, 1]
+        n_image = scipy.misc.imresize(n_image, [size, size])
+        n_image = n_image.astype("float64")
+        return n_image
 class Masks(object):
     """
     todo
@@ -20,7 +88,6 @@ class Masks(object):
         Private Method
         Return a hadamard matrix
         """
-        # size is 2 power to order
         order = int(math.log(self.image_size, 2))
         matrix_code = self.__base_convert(id_num, 4)
         padding = np.zeros(7 - len(matrix_code), dtype="int")
