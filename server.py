@@ -3,8 +3,7 @@
 import socket
  
 #instanciamos un objeto para trabajar con el socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
- 
+s = socket.socket(socket.AF_INET)
 #Con el metodo bind le indicamos que puerto debe escuchar y de que servidor esperar conexiones
 #Es mejor dejarlo en blanco para recibir conexiones externas si es nuestro caso
 s.bind(("", 9999))
@@ -17,22 +16,13 @@ s.listen(1)
 #devolvera tambien un objeto que representa una tupla con los datos de conexion: IP y puerto
 sc, addr = s.accept()
  
- 
 while True:
- 
-    #Recibimos el mensaje, con el metodo recv recibimos datos y como parametro 
-    #la cantidad de bytes para recibir
-    recibido = sc.recv(10)
-    print recibido
-    #Si el mensaje recibido es la palabra close se cierra la aplicacion
-    if recibido.find("close")<0:
-        break
- 
-    #Si se reciben datos nos muestra la IP y el mensaje recibido
-    
- 
-    #Devolvemos el mensaje al cliente
-print recibido
+    while True:
+        
+        recibido = sc.recv(10)
+        if recibido.find("/n")>0:
+            print recibido
+    sc, addr = s.accept()
  
 #Cerramos la instancia del socket cliente y servidor
 sc.close()
