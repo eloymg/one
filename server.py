@@ -22,18 +22,17 @@ while True:
  
     #Recibimos el mensaje, con el metodo recv recibimos datos y como parametro 
     #la cantidad de bytes para recibir
-    recibido = sc.recv(5)
-    
+    recibido = sc.recv(10)
+    print recibido
     #Si el mensaje recibido es la palabra close se cierra la aplicacion
-    if recibido == "close":
+    if recibido.find("close")<0:
         break
  
     #Si se reciben datos nos muestra la IP y el mensaje recibido
-    print str(addr[0]) + " dice: ", recibido
+    
  
     #Devolvemos el mensaje al cliente
-    sc.send(recibido)
-print "Adios."
+print recibido
  
 #Cerramos la instancia del socket cliente y servidor
 sc.close()
