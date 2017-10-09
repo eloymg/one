@@ -1,29 +1,25 @@
- 
-#importamos el modulo socket
 import socket
- 
-#instanciamos un objeto para trabajar con el socket
-s = socket.socket(socket.AF_INET)
-#Con el metodo bind le indicamos que puerto debe escuchar y de que servidor esperar conexiones
-#Es mejor dejarlo en blanco para recibir conexiones externas si es nuestro caso
-s.bind(("", 9999))
- 
-#Aceptamos conexiones entrantes con el metodo listen, y ademas aplicamos como parametro
-#El numero de conexiones entrantes que vamos a aceptar
-s.listen(1)
- 
-#Instanciamos un objeto sc (socket cliente) para recibir datos, al recibir datos este 
-#devolvera tambien un objeto que representa una tupla con los datos de conexion: IP y puerto
-sc, addr = s.accept()
- 
-while True:
-    while True:
-        
-        recibido = sc.recv(10)
-        if recibido.find("/n")>0:
-            print recibido
-    sc, addr = s.accept()
- 
-#Cerramos la instancia del socket cliente y servidor
-sc.close()
-s.close()
+import thread
+
+class server:
+    def __init__(self, sock=None):
+        self.data = []
+        if sock is None:
+            self.sock = socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.sock = sock
+    def handler(self,a):
+        while True:
+            sc , addr = self.sock.accept()
+            recibido = sc.recv(20)
+            if recibido.find("data:")>0:
+                print recibido
+                self.data.append(recibido)
+                sc.send("ACK")
+    def server(self):
+       self.sock.bind(("", 9999))
+       self.sock.listen(1)
+       thread.start_new_thread(self.handler,(self,))
+    def data(self):
+        return self.data
