@@ -9,35 +9,29 @@ class server:
     def __init__(self, sock=None):
         self.data = []
         if sock is None:
-            self.sock = socket.socket(
-                socket.AF_INET, socket.SOCK_STREAM)
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         else:
             self.sock = sock
-    def handler(self,a):
-        
+    def handler(self, _):
+        sc, _ = self.sock.accept()
         while True:
-            try:
-                sc , addr = self.sock.accept()
-                recibido = sc.recv(100)
-            except socket.error, e:
-                err = e.args[0]
-                if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-                    time.sleep(1)
-                    print 'No data available'
-                    continue
-                else:
-                    # a "real" error occurred
-                    print e
-                    sys.exit(1)
-            else:
-                if recibido.find("data:")>0:
-                    print recibido
-                    self.data.append(recibido)
-                    sc.send("ACK")
+            recibido = sc.recv(100)
+            if recibido == '':
+                sc.close()
+                sc, _ = self.sock.accept()
+            if recibido.find('nonce:') > 0:
+                self.__nonce = recibido.split(":")[1]
+                print "Nonce recived: "+self.__nonce
+                sc.send("ACK")
     def server(self):
-       self.sock.setblocking(0)
-       self.sock.bind(("", 9999))
-       self.sock.listen(1)
-       thread.start_new_thread(self.handler,(self,))
+        self.sock.bind(("", 9999))
+        self.sock.listen(1)
+        thread.start_new_thread(self.handler, (self, ))
     def data(self):
         return self.data
+
+
+s = server()
+s.server()
+while True:
+    a = 2
