@@ -14,7 +14,7 @@ class client(object):
         self.data = []
 
     def handler(self, _):
-        nonce_counter = 101
+        nonce_counter = 101git
         while True:
             if nonce_counter > 100:
                 cipher, nonce = self.__cipher()
