@@ -9,13 +9,31 @@ import matplotlib.pyplot as plt
 import cvxpy as cvx
 
 class One(object):
-    def __init__(self):
-
-    def benchmark():
-
+    def __init__(self,image):
+        self.image = image
     def reconstruction(self, method='', image, samples)
-        if method = '':
+        nx,ny = image.shape
+        m = Masks(nx)
+        if method = 'hadamard':
+            hadamard_masks = m.generate_hadamard(nx*ny)
+            np.random.shuffle(hadamard_masks)
+            num=1
 
+            im_vec=[]
+            imM = scipy.misc.imresize(get_image(), [128, 128])
+            for i in range(0, 1000):
+                im = scipy.misc.imresize(get_image(), [128, 128])
+                im_vec.append(im)
+
+            res = np.zeros(imM.shape)
+
+
+            for i in range(0, len(hadamard_masks)):
+                masked = im_vec[i]*hadamard_masks[i]
+                intensity = masked.sum(dtype="float64")
+                pixels=m.sum(dtype="float64")
+                res += (((intensity/pixels)/4**7)*m)
+                num+=1
         
 
         elif method = 'fourier':
@@ -25,8 +43,8 @@ class One(object):
             spfft.idct(np.identity(ny), norm='ortho', axis=0)
             )
             m = Masks()
-            mask_vec = m.generate_random(samples)
-            mask_vec_raw =[]
+            mask_vec_raw = m.generate_random(samples)
+            mask_vec =[]
             for i in range(0,nx*ny):
                 mask_vec.append(mask_vec[i].T.flatten())
             mask_vec_formated = np.expand_dims(mask_vec, axis=1)
@@ -49,6 +67,7 @@ class One(object):
             Xat = Xat2.reshape(nx, ny).T
             Xa = self.idct2(Xat)
             Xa = Xa.astype("float64")
+            return Xa
     @staticmethod
     def idct2(x):
         return spfft.idct(spfft.idct(x.T, norm='ortho', axis=0).T, norm='ortho', axis=0)
@@ -73,6 +92,7 @@ class Image(object):
         n_image = scipy.misc.imresize(n_image, [size, size])
         n_image = n_image.astype("float64")
         return n_image
+
 class Masks(object):
     """
     todo

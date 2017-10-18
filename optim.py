@@ -56,10 +56,12 @@ def evaluate(x, g, step):
     Axb2.T.flat[ri] = Axb
     """
     ####OPTIONA2
-    Axb2 = np.dot(Axb,mask_vec)
-    Axb2 = Axb2.reshape((nx,ny))
+    Axb2 = np.zeros(x2.shape)
+    for i in range(0,len(mask_vec)):
+        Axb2 += mask_vec[i].reshape((nx,ny)).T*Axb[i]
     #####
-     # fill columns-first
+
+    # fill columns-first
 
     # A'(Ax-b) is just the 2D dct of Axb2
     AtAxb2 = 2 * dct2(Axb2)
@@ -75,20 +77,21 @@ def evaluate(x, g, step):
 # read original image
 TEST_IMAGE = scipy.misc.face()
 TEST_IMAGE = TEST_IMAGE[:,:,0]
-Xorig = scipy.misc.imresize(TEST_IMAGE, [32, 32])
+Xorig = scipy.misc.imresize(TEST_IMAGE, [16, 16])
 #Xorig = plt.imread('Escher_Waterfall.jpg')
 ny,nx= Xorig.shape
 
 mask_vec =[]
 intensity_vec =[]
 
-for i in range(0,300):
+for i in range(0,100):
     mask = (np.random.rand(nx,ny)<0.5)*1
     masked = mask*Xorig
     intensity = np.sum(masked)
     mask_vec.append(mask.T.flatten())
     intensity_vec.append(intensity)
 #mask_vec = np.expand_dims(mask_vec, axis=1)
+mask_vec = np.asarray(mask_vec)
 
 # fractions of the scaled image to randomly sample at
 sample_size = 0.2
@@ -117,7 +120,7 @@ mask = Xm
 b = X.T.flat[ri].astype(float)
 
 # perform the L1 minimization in memory
-Xat2 = (nx*ny, evaluate, None, 5)
+Xat2 = owlqn(nx*ny,evaluate,None, 5)
 
 # transform the output back into the spatial domain
 Xat = Xat2.reshape(nx, ny).T # stack columns
@@ -128,7 +131,7 @@ Z = Xa.astype('uint8')
 fig = plt.figure()
 fig.add_subplot(1, 2, 1)
 plt.gray()
-plt.imshow(mask)
+plt.imshow(Xorig)
 fig.add_subplot(1, 2, 2)
 plt.imshow(Z)
 plt.show()
