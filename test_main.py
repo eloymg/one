@@ -8,6 +8,10 @@ def imshow(im):
     plt.imshow(im)
     plt.show()
 
+s = main.Server()
+d = s.handler()
+print(d)
+
 i = main.Image()
 im = i.return_image()
 s = main.Simulator(500,im)

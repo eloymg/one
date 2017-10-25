@@ -14,9 +14,9 @@ class client(object):
         self.data = []
 
     def handler(self, _):
-        nonce_counter = 101git
+        nonce_counter = 1001
         while True:
-            if nonce_counter > 100:
+            if nonce_counter > 1000:
                 cipher, nonce = self.__cipher()
                 response = self.send('nonce:'+nonce)
                 if response == "timeout":
