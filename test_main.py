@@ -11,7 +11,7 @@ def imshow(im):
 s = main.Server()
 d = s.handler()
 print(d)
-
+exit()
 i = main.Image()
 im = i.return_image()
 s = main.Simulator(500,im)

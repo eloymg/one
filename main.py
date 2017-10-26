@@ -3,18 +3,19 @@ Main
 """
 
 import math
+import socket
+import time
+import _thread
 import numpy as np
 import scipy.misc
 import matplotlib.pyplot as plt
 import scipy.fftpack as spfft
 import cvxpy as cvx
 from pylbfgs import owlqn
-import time
-import socket
 from Crypto.Cipher import ARC4
 from Crypto.Hash import SHA
 from Crypto import Random
-import _thread
+
 """
 for i in intensity_vec:
     cipher_msg.append(cipher1.encrypt(str(i)))
@@ -30,27 +31,28 @@ class Client(object):
         while True:
             if nonce_counter > 1000:
                 cipher, nonce = self.__cipher()
-                response = self.send('nonce:' + str(nonce))
-                response = str(response,'utf-8')
-                print(response)
+                response = self.send(b'nonce:' + nonce)
+                response = str(response, 'utf-8')
                 if response == "timeout":
                     print('timeout!')
                 elif response == "ACK":
                     nonce_counter = 0
                 else:
-                    print('bad data1')
+                    print('bad data')
 
             if len(self.data) > 0:
                 data = self.data[0]
-                response = self.send( 'data:' + str(cipher.encrypt(data)))
-                response = str(response,'utf-8')
+                response = self.send(b'data:' + cipher.encrypt(data))
                 if response == "timeout":
                     print('timeout!')
-                elif response == "ACK":
+                elif response == b"ACK":
                     self.data.pop(0)
                     nonce_counter += 1
+                elif response == b"ACK/RST":
+                    print('All data sended')
+                    break
                 else:
-                    print('bad data2')
+                    print('bad data')
 
     def sender(self):
         _thread.start_new_thread(self.handler, (self, ))
@@ -63,7 +65,7 @@ class Client(object):
     def send(data):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(("127.0.0.1", 9999))
-        sock.send(bytes(data,'utf-8'))
+        sock.send(data)
         sock.settimeout(5)
         try:
             response = sock.recv(1024)
@@ -76,8 +78,6 @@ class Client(object):
     def __cipher():
         key = b'Very long and confidential key'
         nonce = Random.new().read(16)
-        print("NONCE CLIENT")
-        print(nonce)
         tempkey = SHA.new(key + nonce).digest()
         cipher = ARC4.new(tempkey)
         return cipher, nonce
@@ -97,7 +97,7 @@ class Server(object):
         self.sock.bind(("", 9999))
         self.sock.listen(1)
         sc, _ = self.sock.accept()
-        print("Server initiated!")
+        print("Comunication initiated")
         while True:
             recibido = sc.recv(100)
             if recibido == b"":
@@ -105,20 +105,23 @@ class Server(object):
                 sc, _ = self.sock.accept()
             if recibido[:6] == b"nonce:":
                 self.__nonce_recv = recibido[6:]
-                print("Nonce recived: " + str(self.__nonce_recv,'utf-8'))
+                print("Nonce recived: " + str(self.__nonce_recv))
                 sc.send(b"ACK")
             if recibido[:5] == b"data:":
                 if self.__nonce_recv != self.__nonce:
                     cip = self.__cipher(self.__nonce_recv)
                     self.__nonce = self.__nonce_recv
-                decrypted_data = cip.decrypt(str(recibido[5:],'utf-8'))
+                decrypted_data = cip.decrypt(recibido[5:])
+                print(decrypted_data)
+                if decrypted_data == "END":
+                    print("All data recived")
+                    sc.send(b"ACK/RST")
+                    sc.close()
+                    break
                 self.data.append(decrypted_data)
-                print("data recived: " + str(decrypted_data))
+                print("data recived: " + str(decrypted_data,'utf-8'))
                 sc.send(b"ACK")
-            if recibido[:3] == b'END':
-                sc.send(b"ACK/RST")
-                sc.close()
-                break
+            
         return self.get_data()
 
     def get_data(self):
@@ -127,8 +130,6 @@ class Server(object):
     @staticmethod
     def __cipher(nonce):
         key = b'Very long and confidential key'
-        print("NONCE SERVER")
-        print(nonce)
         tempkey = SHA.new(key + nonce).digest()
         cipher = ARC4.new(tempkey)
         return cipher
