@@ -15,7 +15,6 @@ from Crypto.Cipher import ARC4
 from Crypto.Hash import SHA
 from Crypto import Random
 
-
 class Client(object):
     def __init__(self):
         self.data = []
@@ -164,7 +163,7 @@ class One(object):
         self.samples = samples
         if method == 'hadamard':
             hadamard_masks = m.generate_hadamard(len(samples), image_size)
-            res = np.zeros([image_size, image_size])
+            res = np.zeros([image_size[0], image_size[1]])
             for i in range(0, len(samples)):
                 res += hadamard_masks[i] * samples[i]
         if method == 'fourier':

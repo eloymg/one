@@ -10,11 +10,9 @@ def imshow(im):
 
 i = main.Image()
 im = i.return_image()
-s = main.Simulator(1000,im)
+s = main.Simulator(4000,im)
 o = main.One()
-res = o.reconstruction(s.random_samples(),im.shape,method='fourier_optim')
+res = o.reconstruction(s.hadamard_samples(),im.shape,method='hadamard')
 imshow(res)
-#res = o.reconstruction(s.hadamard_samples(),im.shape[0],method='hadamard')
-#imshow(res)
 res = o.reconstruction(s.random_samples(),im.shape,method='fourier')
 imshow(res)
