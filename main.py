@@ -11,11 +11,12 @@ import scipy.misc
 import matplotlib.pyplot as plt
 import scipy.fftpack as spfft
 import cvxpy as cvx
+"""
 from pylbfgs import owlqn
 from Crypto.Cipher import ARC4
 from Crypto.Hash import SHA
 from Crypto import Random
-
+"""
 """
 for i in intensity_vec:
     cipher_msg.append(cipher1.encrypt(str(i)))
@@ -140,45 +141,53 @@ class Simulator(object):
     Generate a simulated samples vector
     """
 
-    def __init__(self, num_samples, image):
-        self.num_samples = num_samples
+    def __init__(self, image,mode=''):
+        self.mode = mode
         self.image = image
-
-    def hadamard_samples(self):
-        return self.__auxiliar_function("h")
-
-    def random_samples(self):
-        return self.__auxiliar_function("r")
-
-    def __auxiliar_function(self, t):
+        self.counter = 0
+        self.masks = []
         m = Masks()
         np.random.seed(1)
-        if t == "r":
-            masks = m.generate_random(self.num_samples, self.image.shape[0])
-        elif t == "h":
-            masks = m.generate_hadamard(self.num_samples, self.image.shape[0])
-            np.random.shuffle(masks)
-        samples = []
-        for i in masks:
-            masked = i * self.image
-            samples.append(np.sum(masked))
-        return samples
+        if mode == "random":
+            self.masks = m.generate_random(self.image.shape[0]*self.image.shape[0], self.image.shape[0])
+        elif mode == "hadamard":
+            self.masks = m.generate_hadamard(self.image.shape[0]*self.image.shape[0], self.image.shape[0])
+            self.masks = (np.asarray(self.masks)>0)*1.0
+    def get_sample(self):
+        try:
+            intensity = np.sum(self.masks[self.counter] * self.image)
+        except:
+            return EOFError
+        self.counter+=1
+        return intensity
 
 
-class One(object):
-    def reconstruction(self, samples, image_size, method=''):
+class Single(object):
+    def reconstruction(self, samples, image_size, method='', mask=''):
         m = Masks()
         np.random.seed(1)
         self.image_size = image_size
         self.samples = samples
+        if mask == 'hadamard':
+                masks = m.generate_hadamard(len(samples), image_size)
+        else:
+            random_masks = m.generate_random(len(samples), image_size)
+            masks= []
+            for i in random_masks:
+                masks.append(i.T.flatten())
         if method == 'hadamard':
-            hadamard_masks = m.generate_hadamard(len(samples), image_size)
-            np.random.shuffle(hadamard_masks)
+            if mask == '' :
+                masks = m.generate_hadamard(len(samples), image_size)
+            else:
+                masks = random_masks
             res = np.zeros([image_size, image_size])
             for i in range(0, len(samples)):
-                res += hadamard_masks[i] * samples[i]
+                res += masks[i] * samples[i]
         if method == 'fourier':
             random_masks = m.generate_random(len(samples), image_size)
+            if mask == 'hadamard' :
+                 random_masks = m.generate_hadamard(len(samples), image_size)
+                 random_masks = (np.asarray(random_masks)>0)*1.0
             random_masks_formated = []
             for i in random_masks:
                 random_masks_formated.append(i.T.flatten())
@@ -190,21 +199,23 @@ class One(object):
             objective = cvx.Minimize(cvx.norm(vx, 1))
             constraints = [A * vx == samples]
             prob = cvx.Problem(objective, constraints)
-            result = prob.solve(verbose=True)
+            result = prob.solve(verbose=False)
             Xat2 = np.array(vx.value).squeeze()
             Xat = Xat2.reshape(image_size, image_size).T
             res = self.__idct2(Xat)
         if method == 'fourier_optim':
             random_masks = m.generate_random(len(samples), image_size)
+            if mask == 'hadamard' :
+                 random_masks = m.generate_hadamard(len(samples), image_size)
+                 random_masks = (np.asarray(random_masks)>0)*1.0
             random_masks_formated = []
             for i in random_masks:
                 random_masks_formated.append(i.T.flatten())
             self.random_masks = random_masks_formated
             Xat2 = owlqn(image_size * image_size, self.__evaluate,
-                         self.__progress, 10000)
+                         self.__progress, 500)
             Xat = Xat2.reshape(image_size, image_size).T  # stack columns
-            Xa = self.__idct2(Xat)
-            res = Xa.astype('uint8')
+            res = self.__idct2(Xat)
         return res
 
     @staticmethod
@@ -255,12 +266,14 @@ class One(object):
     def __progress(x, g, fx, xnorm, gnorm, step, k, ls):
         # Print variables to screen or file or whatever. Return zero to
         # continue algorithm; non-zero will halt execution.
-        if gnorm < 5:
+        #print(gnorm)
+       
+        if gnorm < 0.01:
             a = 1
         else:
             a = 0
-        return a
-
+        return 0
+        
 
 class Image(object):
     def __init__(self):
@@ -293,9 +306,12 @@ class Masks(object):
 
     def generate_hadamard(self, number, size):
         """Generate a n hadamard matrix vector"""
+        np.random.seed(1)
+        ids =list(range(0,size*size))
+        np.random.shuffle(ids)
         matrix_vector = []
         for i in range(0, number):
-            hadamard_matrix = self.__hadamard(i, size)
+            hadamard_matrix = self.__hadamard(ids[i], size)
             matrix_vector.append(hadamard_matrix)
         return matrix_vector
 
