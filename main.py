@@ -16,22 +16,27 @@ from pylbfgs import owlqn
 from Crypto.Cipher import ARC4
 from Crypto.Hash import SHA
 from Crypto import Random
-"""
-"""
-for i in intensity_vec:
-    cipher_msg.append(cipher1.encrypt(str(i)))
+from Crypto.Cipher import AES
+from Crypto.Util import Counter
+from Crypto.Util import number
 """
 
 
 class Client(object):
-    def __init__(self):
+    def __init__(self,cipher_mode='AES'):
         self.data = []
-
+        self.cipher_mode=cipher_mode
     def handler(self, _):
         nonce_counter = 1001
         while True:
             if nonce_counter > 1000:
-                cipher, nonce = self.__cipher()
+                if self.cipher_mode=='AES':
+                    cipher, nonce = self.__cipher_AES()
+                elif self.cipher_mode=='RC4':
+                    cipher, nonce = self.__cipher_RC4()
+                else:
+                    print('Bad cipher mode')
+                    break
                 response = self.send(b'nonce:' + nonce)
                 response = str(response, 'utf-8')
                 if response == "timeout":
@@ -76,16 +81,23 @@ class Client(object):
         return response
 
     @staticmethod
-    def __cipher():
+    def __cipher_RC4():
         key = b'Very long and confidential key'
         nonce = Random.new().read(16)
         tempkey = SHA.new(key + nonce).digest()
         cipher = ARC4.new(tempkey)
         return cipher, nonce
-
+    @staticmethod
+    def __cipher_AES():
+        key = b'Very long and co'
+        nonce = number.getRandomInteger(128)
+        ctr = Counter.new(128,initial_value=nonce)
+        cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+    
+        return cipher, bytes(str(nonce),'utf-8')
 
 class Server(object):
-    def __init__(self, sock=None):
+    def __init__(self, sock=None, cipher_mode='AES'):
         self.data = []
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -93,6 +105,7 @@ class Server(object):
             self.sock = sock
         self.__nonce = ""
         self.__nonce_recv = "n"
+        self.cipher_mode=cipher_mode
 
     def handler(self):
         self.sock.bind(("", 9999))
@@ -110,11 +123,14 @@ class Server(object):
                 sc.send(b"ACK")
             if recibido[:5] == b"data:":
                 if self.__nonce_recv != self.__nonce:
-                    cip = self.__cipher(self.__nonce_recv)
+                    if self.cipher_mode=='AES':
+                        cip = self.__cipher_AES(self.__nonce_recv)
+                    elif self.cipher_mode=='RC4':
+                        cip = self.__cipher_RC4(self.__nonce_recv)
                     self.__nonce = self.__nonce_recv
                 decrypted_data = cip.decrypt(recibido[5:])
                 print(decrypted_data)
-                if decrypted_data == "END":
+                if decrypted_data == b"END":
                     print("All data recived")
                     sc.send(b"ACK/RST")
                     sc.close()
@@ -129,12 +145,17 @@ class Server(object):
         return self.data
 
     @staticmethod
-    def __cipher(nonce):
+    def __cipher_AES(nonce):
+        key = b'Very long and co'
+        ctr = Counter.new(128,initial_value=int(nonce))
+        cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+        return cipher
+    @staticmethod
+    def __cipher_RC4(nonce):
         key = b'Very long and confidential key'
         tempkey = SHA.new(key + nonce).digest()
         cipher = ARC4.new(tempkey)
         return cipher
-
 
 class Simulator(object):
     """
@@ -152,7 +173,6 @@ class Simulator(object):
             self.masks = m.generate_random(self.image.shape[0]*self.image.shape[0], self.image.shape[0])
         elif mode == "hadamard":
             self.masks = m.generate_hadamard(self.image.shape[0]*self.image.shape[0], self.image.shape[0])
-            self.masks = (np.asarray(self.masks)>0)*1.0
     def get_sample(self):
         try:
             intensity = np.sum(self.masks[self.counter] * self.image)
@@ -165,7 +185,7 @@ class Simulator(object):
 class Single(object):
     def reconstruction(self, samples, image_size, method='', mask=''):
         m = Masks()
-        np.random.seed(1)
+      
         self.image_size = image_size
         self.samples = samples
         if mask == 'hadamard':
@@ -175,11 +195,20 @@ class Single(object):
             masks= []
             for i in random_masks:
                 masks.append(i.T.flatten())
+        if method == 'direct_inverse':
+            matrix_vector = []
+            np.random.seed(1)
+            for _ in range(0, len(samples)):
+                random_matrix = (np.random.rand(self.image_size, self.image_size) < 0.5) * np.float32(1)
+                matrix_vector.append(random_matrix.flatten())
+            Tmatrix_vector=np.linalg.pinv(np.matrix(matrix_vector))
+            res = np.reshape(np.matmul(Tmatrix_vector,np.matrix(samples).T), (64, 64))
         if method == 'hadamard':
-            if mask == '' :
+            if mask == '' or mask == 'hadamard':
                 masks = m.generate_hadamard(len(samples), image_size)
             else:
                 masks = random_masks
+           
             res = np.zeros([image_size, image_size])
             for i in range(0, len(samples)):
                 res += masks[i] * samples[i]

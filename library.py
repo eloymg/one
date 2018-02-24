@@ -21,6 +21,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #vector or processed
 MODEL = "classic"
 
+def imshow(im):
+    plt.figure()
+    plt.gray()
+    plt.imshow(im)
+    plt.show()
+
 def classic_model(features):
     """Model function for CNN."""
     # Input Layer
@@ -130,7 +136,7 @@ def test_model(features):
 
 def main2(img,per):
         tf.reset_default_graph()      
-        data_path = "C:\\Users\\eloy\\Desktop\\Code\\Python\\dp_one\\experiments\\experiment("+str(per)+")\\model-"+str(per)+"-2550.ckpt"
+        data_path = "C:\\Users\\eloy\\Desktop\\Code\\Python\\dp_one\\pesos(800)\\experiment("+str(per)+")\\model-"+str(per)+"-204765.ckpt"
         nx,ny=img.shape
         r_input = tf.placeholder(tf.float32, None)
         out = test_model(r_input)
@@ -167,5 +173,10 @@ if __name__ == "__main__":
     im = i.return_image(size=64).astype("uint8")
     percent = np.arange(0.1, 1.1, 0.1)
     for per in percent:
+        tic = time.clock()
         output = deepreconstruct(im,per)
-        print(ssim(im,np.squeeze(np.asarray(output)).astype('uint8')))
+        toc = time.clock()
+        t = toc - tic
+        plt.imsave("NN_"+str(per)+".jpg",np.squeeze(np.asarray(output)).astype('uint8'),cmap=plt.cm.gray)
+        print(per," ",ssim(im,np.squeeze(np.asarray(output)).astype('uint8'))," ",t)
+
