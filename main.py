@@ -4,7 +4,6 @@ Main
 
 import math
 import socket
-import time
 import _thread
 import numpy as np
 import scipy.misc
@@ -16,11 +15,14 @@ from pylbfgs import owlqn
 from Crypto.Cipher import ARC4
 from Crypto.Hash import SHA
 from Crypto import Random
+<<<<<<< HEAD
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from Crypto.Util import number
 """
 
+=======
+>>>>>>> refs/remotes/origin/master
 
 class Client(object):
     def __init__(self,cipher_mode='AES'):
@@ -136,9 +138,9 @@ class Server(object):
                     sc.close()
                     break
                 self.data.append(decrypted_data)
-                print("data recived: " + str(decrypted_data,'utf-8'))
+                print("data recived: " + str(decrypted_data, 'utf-8'))
                 sc.send(b"ACK")
-            
+
         return self.get_data()
 
     def get_data(self):
@@ -165,6 +167,7 @@ class Simulator(object):
     def __init__(self, image,mode=''):
         self.mode = mode
         self.image = image
+<<<<<<< HEAD
         self.counter = 0
         self.masks = []
         m = Masks()
@@ -186,6 +189,31 @@ class Single(object):
     def reconstruction(self, samples, image_size, method='', mask=''):
         m = Masks()
       
+=======
+
+    def random_samples(self):
+        return self.__auxiliar_function(1)
+    
+    def hadamard_samples(self):
+        return self.__auxiliar_function(2)
+
+    def __auxiliar_function(self, t):
+        m = Masks()
+        if t == 1:
+            masks = m.generate_random(self.num_samples, self.image.shape)
+        elif t == 2:
+            masks = m.generate_hadamard(self.num_samples, self.image.shape)
+        samples = []
+        for i in masks:
+            masked = i * self.image
+            samples.append(np.sum(masked))
+        return samples
+
+
+class One(object):
+    def reconstruction(self, samples, image_size, method=''):
+        m = Masks()
+>>>>>>> refs/remotes/origin/master
         self.image_size = image_size
         self.samples = samples
         if mask == 'hadamard':
@@ -204,12 +232,17 @@ class Single(object):
             Tmatrix_vector=np.linalg.pinv(np.matrix(matrix_vector))
             res = np.reshape(np.matmul(Tmatrix_vector,np.matrix(samples).T), (64, 64))
         if method == 'hadamard':
+<<<<<<< HEAD
             if mask == '' or mask == 'hadamard':
                 masks = m.generate_hadamard(len(samples), image_size)
             else:
                 masks = random_masks
            
             res = np.zeros([image_size, image_size])
+=======
+            hadamard_masks = m.generate_hadamard(len(samples), image_size)
+            res = np.zeros([image_size[0], image_size[1]])
+>>>>>>> refs/remotes/origin/master
             for i in range(0, len(samples)):
                 res += masks[i] * samples[i]
         if method == 'fourier':
@@ -221,17 +254,24 @@ class Single(object):
             for i in random_masks:
                 random_masks_formated.append(i.T.flatten())
             A = np.kron(
-                spfft.idct(np.identity(image_size), norm='ortho', axis=0),
-                spfft.idct(np.identity(image_size), norm='ortho', axis=0))
+                spfft.idct(np.identity(image_size[0]), norm='ortho', axis=0),
+                spfft.idct(np.identity(image_size[1]), norm='ortho', axis=0))
             A = np.dot(random_masks_formated, A)
-            vx = cvx.Variable(image_size * image_size)
+            vx = cvx.Variable(image_size[0] * image_size[1])
             objective = cvx.Minimize(cvx.norm(vx, 1))
             constraints = [A * vx == samples]
             prob = cvx.Problem(objective, constraints)
+<<<<<<< HEAD
             result = prob.solve(verbose=False)
             Xat2 = np.array(vx.value).squeeze()
             Xat = Xat2.reshape(image_size, image_size).T
             res = self.__idct2(Xat)
+=======
+            prob.solve(verbose=True)
+            result2 = np.array(vx.value).squeeze()
+            result = result2.reshape(image_size[0], image_size[1]).T
+            res = self.__idct2(result)
+>>>>>>> refs/remotes/origin/master
         if method == 'fourier_optim':
             random_masks = m.generate_random(len(samples), image_size)
             if mask == 'hadamard' :
@@ -241,10 +281,18 @@ class Single(object):
             for i in random_masks:
                 random_masks_formated.append(i.T.flatten())
             self.random_masks = random_masks_formated
+<<<<<<< HEAD
             Xat2 = owlqn(image_size * image_size, self.__evaluate,
                          self.__progress, 500)
             Xat = Xat2.reshape(image_size, image_size).T  # stack columns
             res = self.__idct2(Xat)
+=======
+            tresult2 = owlqn(image_size[0] * image_size[1], self.__evaluate,
+                             self.__progress, 10000)
+            tresult = tresult2.reshape(image_size[0], image_size[1]).T
+            result = self.__idct2(tresult)
+            res = result.astype('uint8').T
+>>>>>>> refs/remotes/origin/master
         return res
 
     @staticmethod
@@ -265,12 +313,12 @@ class Single(object):
         # (2) the gradient 2*A'(Ax-b)
 
         # expand x columns-first
-        x2 = x.reshape((self.image_size, self.image_size)).T
+        x2 = x.reshape((self.image_size[0], self.image_size[1])).T
 
         # Ax is just the inverse 2D dct of x2
         Ax2 = self.__idct2(x2)
 
-        Ax = np.dot(self.random_masks, Ax2.T.flatten())
+        Ax = np.dot(self.random_masks, Ax2.flatten())
 
         # calculate the residual Ax-b and its 2-norm squared
 
@@ -280,7 +328,7 @@ class Single(object):
 
         Axb2 = np.zeros(x2.shape, dtype="float64")
         for a in range(0, len(self.random_masks)):
-            Axb2 += self.random_masks[a].reshape(x2.shape).T * Axb[a]
+            Axb2 += self.random_masks[a].reshape(x2.shape) * Axb[a]
 
         # A'(Ax-b) is just the 2D dct of Axb2
         AtAxb2 = 2 * self.__dct2(Axb2)
@@ -300,6 +348,7 @@ class Single(object):
         if gnorm < 0.01:
             a = 1
         else:
+            print(gnorm)
             a = 0
         return 0
         
@@ -330,10 +379,11 @@ class Image(object):
 
 class Masks(object):
     """
-    todo
+    Generate a vector of Masks
     """
 
     def generate_hadamard(self, number, size):
+<<<<<<< HEAD
         """Generate a n hadamard matrix vector"""
         np.random.seed(1)
         ids =list(range(0,size*size))
@@ -341,15 +391,25 @@ class Masks(object):
         matrix_vector = []
         for i in range(0, number):
             hadamard_matrix = self.__hadamard(ids[i], size)
+=======
+        """Generate a hadamard matrix vector"""
+        if size[0]!=size[1]:
+            exit()
+        matrix_vector = []
+        for i in range(0, number):
+            hadamard_matrix = self.__hadamard(i, size[0])
+>>>>>>> refs/remotes/origin/master
             matrix_vector.append(hadamard_matrix)
+        np.random.seed(1)
+        np.random.shuffle(matrix_vector)
         return matrix_vector
 
     def generate_random(self, number, size):
-        """Generate a n random matrix vector"""
+        """Generate a random matrix vector"""
         matrix_vector = []
         np.random.seed(1)
         for _ in range(0, number):
-            random_matrix = (np.random.rand(size, size) < 0.5) * 1
+            random_matrix = (np.random.rand(size[0], size[1]) < 0.5) * 1
             matrix_vector.append(random_matrix)
         return matrix_vector
 
@@ -388,8 +448,11 @@ class Masks(object):
         return result
 
 
-def imshow(im):
+def imshow(image):
+    """
+    Print image
+    """
     plt.figure()
     plt.gray()
-    plt.imshow(im)
+    plt.imshow(image)
     plt.show()

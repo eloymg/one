@@ -15,6 +15,7 @@ def imshow(im):
     plt.show()
 
 i = main.Image()
+<<<<<<< HEAD
 im = i.return_image(size=64).astype("uint8")
 per = np.arange(0.1, 1.1, 0.1)
 for j in per:
@@ -65,3 +66,12 @@ for j in per:
     
     
     
+=======
+im = i.return_image()
+s = main.Simulator(4000,im)
+o = main.One()
+res = o.reconstruction(s.hadamard_samples(),im.shape,method='hadamard')
+imshow(res)
+res = o.reconstruction(s.random_samples(),im.shape,method='fourier')
+imshow(res)
+>>>>>>> refs/remotes/origin/master
